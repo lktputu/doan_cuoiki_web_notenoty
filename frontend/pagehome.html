@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoteNoty</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/pagehome_ui.css">
+</head>
+<body data-page="home">
+  <nav class="navbar">
+    <a class="nav-brand" href="pagehome.html">
+      <img src="assets/css/logo.png" class="logo-img" alt="Logo NoteNoty">
+      <div class="brand-name">Note<span>Noty</span></div>
+    </a>
+
+    <div class="nav-spacer"></div>
+
+    <div class="nav-search">
+      <i class="ti ti-search"></i>
+      <input type="text" id="searchInput" placeholder="Tìm kiếm ghi chú...">
+    </div>
+
+    <button class="nav-new-note-btn" id="newNoteBtn" type="button">
+      <i class="ti ti-plus"></i>
+      Ghi chú mới
+    </button>
+
+    <div class="user-menu-wrap">
+      <button class="user-pill" id="userMenuBtn" type="button" aria-expanded="false">
+        <div class="user-avatar" id="userAvatar">LM</div>
+        <span class="user-name-nav" id="userNameNav">Lê Minh Gia Mẫn</span>
+        <i class="ti ti-chevron-down user-chevron"></i>
+      </button>
+
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-dropdown-head">
+          <div class="user-avatar user-avatar-lg" id="userAvatarLarge">LM</div>
+          <div>
+            <div class="user-dropdown-name" id="userDropdownName">Lê Minh Gia Mẫn</div>
+            <div class="user-dropdown-email" id="userDropdownEmail">gia.man@example.com</div>
+          </div>
+        </div>
+        <button class="user-dropdown-item" type="button" id="profileBtn">
+          <i class="ti ti-user-circle"></i>
+          Hồ sơ của tôi
+        </button>
+        <button class="user-dropdown-item danger" type="button" id="logoutBtn">
+          <i class="ti ti-logout-2"></i>
+          Đăng xuất
+        </button>
+      </div>
+    </div>
+
+    <button class="nav-icon-btn" id="settingsBtn" type="button" title="Cài đặt">
+      <i class="ti ti-settings"></i>
+    </button>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="sb-item active" type="button" data-filter="all">
+        <i class="ti ti-notes"></i>
+        Ghi chú
+        <span class="sb-count" id="allCount">0</span>
+      </button>
+      <button class="sb-item" type="button" data-filter="shared">
+        <i class="ti ti-users"></i>
+        Được chia sẻ
+        <span class="sb-count" id="sharedCount">0</span>
+      </button>
+      <button class="sb-item" type="button" data-filter="pinned">
+        <i class="ti ti-pin"></i>
+        Đã ghim
+        <span class="sb-count" id="pinnedCount">0</span>
+      </button>
+      <button class="sb-item" type="button" data-filter="locked">
+        <i class="ti ti-lock"></i>
+        Có mật khẩu
+        <span class="sb-count" id="lockedCount">0</span>
+      </button>
+
+      <div class="sb-divider"></div>
+      <div class="sb-section-label">Nhãn của tôi</div>
+      <div id="labelSidebar"></div>
+
+      <button class="sb-add-label" type="button" id="openLabelMgrBtn">
+        <i class="ti ti-tag"></i>
+        Chỉnh sửa nhãn
+      </button>
+    </aside>
+
+    <main class="main">
+      <div class="activation-banner hidden" id="activationBanner">
+        Hãy kích hoạt tài khoản của bạn tại mail đã đăng kí
+      </div>
+
+      <section class="list-toolbar">
+        <div class="toolbar-title" id="pageTitle">Tất cả <span>ghi chú</span></div>
+
+        <select class="sort-sel" id="sortSelect">
+          <option value="modified">Chỉnh sửa gần đây</option>
+          <option value="created">Mới tạo gần đây</option>
+          <option value="alpha">A → Z</option>
+        </select>
+
+        <div class="view-toggle">
+          <button class="vt-btn active" id="gridBtn" type="button">
+            <i class="ti ti-layout-grid"></i>
+            Lưới
+          </button>
+          <button class="vt-btn" id="listBtn" type="button">
+            <i class="ti ti-list"></i>
+            Danh sách
+          </button>
+        </div>
+      </section>
+
+      <section id="pinnedSection">
+        <div class="section-head">
+          <i class="ti ti-pin" aria-hidden="true"></i>
+          Đã ghim
+        </div>
+        <div id="pinnedContainer"></div>
+      </section>
+
+      <section id="allSection">
+        <div class="section-head">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          Gần đây
+        </div>
+        <div id="notesContainer"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay" id="noteEditorOverlay">
+    <div class="modal modal-note-editor">
+      <div class="modal-h">
+        <div>
+          <div class="modal-kicker" id="noteEditorKicker">Ghi chú</div>
+          <h3 id="noteEditorHeading">Ghi chú</h3>
+        </div>
+        <button class="modal-close" type="button" data-close-overlay="noteEditorOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-field">
+        <label for="noteTitleInput">Tiêu đề</label>
+        <input type="text" id="noteTitleInput" maxlength="200" placeholder="Tiêu đề...">
+      </div>
+
+      <div class="modal-field">
+        <label for="noteContentInput">Nội dung</label>
+        <textarea id="noteContentInput" placeholder="Nhập nội dung ghi chú..."></textarea>
+      </div>
+
+      <div class="modal-grid">
+        <div class="modal-field">
+          <label>Màu ghi chú</label>
+          <div class="create-color-strip" id="noteColorStrip"></div>
+        </div>
+
+        <div class="modal-field">
+          <label>Nhãn</label>
+          <div class="picker-wrap picker-wrap-block">
+            <button class="secondary-btn secondary-btn-wide" type="button" id="noteLabelBtn">
+              <i class="ti ti-tag"></i>
+              Chọn nhãn
+            </button>
+            <div class="chip-picker chip-picker-block" id="noteLabelPicker"></div>
+          </div>
+          <div class="selected-tags compact-tags" id="noteSelectedLabels"></div>
+        </div>
+      </div>
+
+      <div class="note-editor-footer-layout">
+        <div class="modal-field note-editor-attachment-field">
+          <label>Ảnh đính kèm</label>
+          <button class="secondary-btn secondary-btn-wide add-image-btn" type="button" id="editorAddImageBtn">
+            <i class="ti ti-photo-plus"></i>
+            Thêm ảnh vào ghi chú
+          </button>
+          <input type="file" id="editorImageInput" accept="image/*" multiple hidden>
+          <div class="editor-image-panel">
+            <div class="img-preview-row editor-preview-row" id="editorImagePreview"></div>
+          </div>
+        </div>
+
+        <div class="modal-actions note-editor-actions">
+          <div class="note-editor-actions-right">
+            <div class="autosave-pill note-editor-status">
+              <span class="pulse-dot" id="editorAutosaveDot"></span>
+              <span id="autosaveStatus">Chờ nhập nội dung để tự lưu</span>
+            </div>
+            <div class="note-editor-button-row">
+              <button class="btn btn-ghost" type="button" data-close-overlay="noteEditorOverlay">Hủy</button>
+              <button class="btn btn-accent" type="button" id="saveNoteBtn">Lưu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div class="confirm-icon-wrap"><i class="ti ti-trash"></i></div>
+      <div class="confirm-title">Xóa ghi chú?</div>
+      <div class="confirm-desc">Ghi chú sẽ bị xóa vĩnh viễn và không thể khôi phục lại.</div>
+      <div class="confirm-btns">
+        <button class="btn btn-ghost" type="button" data-close-overlay="confirmOverlay">Hủy</button>
+        <button class="btn btn-danger" type="button" id="confirmDeleteBtn">Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="shareOverlay">
+    <div class="modal">
+      <div class="modal-h">
+        <h3>Chia sẻ ghi chú</h3>
+        <button class="modal-close" type="button" data-close-overlay="shareOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-field">
+        <label for="shareEmail">Email người nhận</label>
+        <div class="share-input-row">
+          <input type="email" id="shareEmail" placeholder="example@email.com">
+          <button class="btn btn-accent compact" type="button" id="addShareBtn">Thêm</button>
+        </div>
+        <div class="permission-toggle">
+          <button class="pt-btn active" type="button" data-perm="readonly">Chỉ xem</button>
+          <button class="pt-btn" type="button" data-perm="editable">Chỉnh sửa</button>
+        </div>
+      </div>
+
+      <div class="modal-field">
+        <label>Đã chia sẻ với</label>
+        <div class="shared-list" id="sharedList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="passwordOverlay">
+    <div class="modal">
+      <div class="modal-h">
+        <h3 id="passwordModalTitle">Thiết lập mật khẩu</h3>
+        <button class="modal-close" type="button" data-close-overlay="passwordOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-field hidden" id="currentPasswordField">
+        <label for="currentPasswordInput">Mật khẩu hiện tại</label>
+        <input type="password" id="currentPasswordInput" placeholder="Nhập mật khẩu hiện tại...">
+      </div>
+
+      <div class="modal-field">
+        <label for="newPasswordInput">Mật khẩu mới</label>
+        <input type="password" id="newPasswordInput" placeholder="Tối thiểu 4 ký tự">
+      </div>
+
+      <div class="modal-field">
+        <label for="confirmPasswordInput">Xác nhận mật khẩu</label>
+        <input type="password" id="confirmPasswordInput" placeholder="Nhập lại mật khẩu">
+      </div>
+
+      <div class="modal-actions modal-actions-split">
+        <button class="btn btn-ghost hidden" type="button" id="disablePasswordBtn">Tắt mật khẩu</button>
+        <div class="modal-actions-right">
+          <button class="btn btn-ghost" type="button" data-close-overlay="passwordOverlay">Hủy</button>
+          <button class="btn btn-accent" type="button" id="savePasswordBtn">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="unlockOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-h">
+        <h3>Mở khóa ghi chú</h3>
+        <button class="modal-close" type="button" data-close-overlay="unlockOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-field">
+        <label for="unlockPasswordInput">Mật khẩu</label>
+        <input type="password" id="unlockPasswordInput" placeholder="Nhập mật khẩu để tiếp tục">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-close-overlay="unlockOverlay">Hủy</button>
+        <button class="btn btn-accent" type="button" id="confirmUnlockBtn">Mở khóa</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="labelMgrOverlay">
+    <div class="modal">
+      <div class="modal-h">
+        <h3>Quản lý nhãn</h3>
+        <button class="modal-close" type="button" data-close-overlay="labelMgrOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="label-create-row">
+        <input type="text" id="newLabelInput" placeholder="Tên nhãn mới...">
+        <button class="btn btn-accent compact" type="button" id="addLabelBtn">Thêm</button>
+      </div>
+
+      <div class="label-list-manage" id="labelMgrList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="imageZoomOverlay">
+    <div class="modal modal-image-viewer">
+      <div class="modal-h">
+        <h3>Xem ảnh đính kèm</h3>
+        <button class="modal-close" type="button" data-close-overlay="imageZoomOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <div class="zoom-image-wrap">
+        <img id="zoomImage" class="zoom-image" src="" alt="Ảnh đính kèm">
+      </div>
+    </div>
+  </div>
+
+  <aside class="drawer" id="settingsDrawer">
+    <div class="drawer-h">
+      <h3>Cài đặt</h3>
+      <button type="button" data-close-drawer="settingsDrawer">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">Giao diện</div>
+      <div class="drawer-row">
+        <span>Chế độ tối</span>
+        <button class="toggle" id="darkToggle" type="button"></button>
+      </div>
+      <div class="drawer-row">
+        <span>Cỡ chữ ghi chú</span>
+        <div class="font-ctrl">
+          <button type="button" id="fontMinusBtn">−</button>
+          <span id="fontLbl">14px</span>
+          <button type="button" id="fontPlusBtn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">Màu nền trang</div>
+      <div class="bg-grid" id="bgGrid">
+        <button class="bg-chip" type="button" data-bg="#f7f3ff" style="background:#f7f3ff">Tím nhạt</button>
+        <button class="bg-chip" type="button" data-bg="#f2f7ff" style="background:#f2f7ff">Xanh dịu</button>
+        <button class="bg-chip" type="button" data-bg="#f4fff7" style="background:#f4fff7">Xanh lá</button>
+        <button class="bg-chip" type="button" data-bg="#fff8f2" style="background:#fff8f2">Cam sữa</button>
+        <button class="bg-chip" type="button" data-bg="#fff3f7" style="background:#fff3f7">Hồng phấn</button>
+        <button class="bg-chip" type="button" data-bg="#f7f7f7" style="background:#f7f7f7">Xám mềm</button>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title">Hành vi</div>
+      <div class="drawer-row">
+        <span>Tự động lưu sau 3 giây</span>
+        <button class="toggle" id="autosaveToggle" type="button"></button>
+      </div>
+      <div class="drawer-row static-row">
+        <span>Live search</span>
+        <strong>300ms</strong>
+      </div>
+      <div class="drawer-row">
+        <span>Xác nhận khi xóa</span>
+        <button class="toggle" id="deleteConfirmToggle" type="button"></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="assets/js/api_client.js"></script>
+  <script src="assets/js/pagehome_data.js"></script>
+  <script src="assets/js/pagehome_render.js"></script>
+  <script src="assets/js/pagehome_actions.js"></script>
+</body>
+</html>

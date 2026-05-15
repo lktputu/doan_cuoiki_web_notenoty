@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - NoteNoty</title>
+    <link rel="stylesheet" href="register_UI.css">
+</head>
+<body>
+    <video autoplay muted loop playsinline class="bg-video">
+        <source src="anh/background_animation.mp4" type="video/mp4">
+    </video>
+
+    <!-- Lớp phủ mờ -->
+    <div class="overlay"></div>
+    <div class="register">
+        <div class="o_dang_ki">
+            <h2>Đăng ký</h2>
+            <form id="registerForm">
+                <div class="box">
+                    <input type="text" id="registerUsername" placeholder="Username" required>
+                    <img src="anh/icon_user.png" alt="Icon">
+                </div>
+                <div class="box">
+                    <input type="text" id="registerEmail" placeholder="Email" required>
+                    <img src="anh/icon_email.png" alt="Icon">
+                </div>
+                <div class="box">
+                    <input type="password" id="registerPassword" placeholder="Mật khẩu" required>
+                    <img src="anh/icon_password.png" alt="Icon">
+                </div>
+                <div class="box">
+                    <input type="password" id="registerConfirmPassword" placeholder="Xác nhận mật khẩu" required>
+                    <img src="anh/icon_password.png" alt="Icon">
+                </div>
+                <div class="auth-message" id="registerMessage"></div>
+                <div>
+                    <button type="submit" class="button_register">Đăng ký</button>
+                </div>
+                <div class="back_login">
+                    <p>Bạn đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+                </div>
+            </form>  
+        </div>
+    </div>
+    <script src="../assets/js/api_client.js"></script>
+    <script src="auth_flow.js"></script>
+</body>
+</html>

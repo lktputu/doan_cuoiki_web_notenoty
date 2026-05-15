@@ -1,0 +1,33 @@
+# Local environment
+*.env
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+vendor/
+backend/vendor/
+
+# Laravel runtime/cache
+backend/.phpunit.result.cache
+backend/bootstrap/cache/*.php
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/storage/framework/views_runtime/
+backend/storage/logs/*.log
+
+# User uploads generated while testing
+backend/public/uploads/avatars/
+backend/public/uploads/notes/
+backend/storage/app/public/notes/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+npm-debug.log
+yarn-error.log

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - NoteNoty</title>
+    <link rel="stylesheet" href="text.css">
+</head>
+<body>
+    <video autoplay muted loop playsinline class="bg-video">
+    <source src="anh/background_animation.mp4" type="video/mp4">
+    </video>
+
+    <!-- Lớp phủ mờ -->
+    <div class="overlay"></div>
+
+    <div class="login">
+        <div class="o_dang_nhap">
+            <h2>Đăng nhập</h2>
+            <form id="loginForm">
+                <div class="box">
+                    <input type="text" id="loginEmail" placeholder="Địa chỉ email" required>
+                    <img src="anh/icon_email.png" alt="Icon">
+                </div>
+                <div class="box">
+                    <input type="password" id="loginPassword" placeholder="Mật khẩu" required>
+                    <img src="anh/icon_password.png" alt="Icon">
+                </div>
+                <div class="remember_me">
+                    <label>
+                        <input type="checkbox"> Remember me</label>
+                        <a href="forgot_password_1.html">Quên mật khẩu</a>
+                </div>
+                <div class="auth-message" id="loginMessage"></div>
+                <div>
+                    <button type="submit" class="button_login">Đăng nhập</button>
+                </div>
+                <div class="regeister">
+                    <p>Bạn chưa có tài khoản? <a href="register.html">Đăng ký tài khoản</a></p>
+                </div>
+            </form>  
+        </div>
+    </div>
+    <script src="../assets/js/api_client.js"></script>
+    <script src="auth_flow.js"></script>
+</body>
+</html>

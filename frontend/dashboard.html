@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồ sơ - NoteNoty</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-shell">
+    <header class="dashboard-topbar">
+      <a class="dashboard-brand" href="pagehome.html">
+        <img src="assets/css/logo.png" class="logo-img" alt="Logo NoteNoty">
+        <div class="brand-name">Note<span>Noty</span></div>
+      </a>
+      <a class="back-home" href="pagehome.html">
+        <i class="ti ti-arrow-left"></i>
+        Quay lại trang chủ
+      </a>
+    </header>
+
+    <main class="dashboard-main">
+      <section class="profile-hero">
+        <div class="profile-cover"></div>
+        <div class="profile-actions">
+          <button class="hero-action hero-action-danger" type="button" id="openPasswordModalBtn">
+            <i class="ti ti-key"></i>
+            Đổi mật khẩu
+          </button>
+          <button class="hero-action hero-action-dark" type="button" id="openProfileModalBtn">
+            <i class="ti ti-pencil"></i>
+            Chỉnh sửa hồ sơ
+          </button>
+        </div>
+
+        <div class="profile-center">
+          <div class="profile-avatar profile-avatar-lg" id="dashboardAvatar">LM</div>
+          <h1 id="dashboardName">Lê Minh Gia Mẫn</h1>
+          <p class="dashboard-email" id="dashboardEmail">gia.man@example.com</p>
+
+          <div class="profile-badges">
+            <span class="profile-badge success" id="dashboardVerifyBadge">
+              <i class="ti ti-circle-check-filled"></i>
+              Đã xác thực email
+            </span>
+            <span class="profile-badge neutral">
+              <i class="ti ti-calendar-event"></i>
+              Tham gia: <strong id="dashboardJoinedDate">04/05/2026</strong>
+            </span>
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong id="totalNotesCount">0</strong>
+            <span>Ghi chú của tôi</span>
+          </div>
+          <div class="hero-stat">
+            <strong id="sharedNotesCount">0</strong>
+            <span>Được chia sẻ</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats-grid" id="statsGrid"></section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Thiết lập đang dùng</h3>
+          </div>
+          <div class="prefs-list" id="prefsList"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Ghi chú được chia sẻ gần đây</h3>
+          </div>
+          <div class="shared-note-list" id="sharedNoteList"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay" id="changePasswordOverlay">
+    <div class="modal">
+      <div class="modal-head danger">
+        <h3><i class="ti ti-key"></i> Đổi mật khẩu</h3>
+        <button class="modal-close" type="button" data-close-overlay="changePasswordOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="currentUserPassword">Mật khẩu hiện tại</label>
+          <input type="password" id="currentUserPassword" autocomplete="current-password">
+          <small>Sau khi xác nhận, hệ thống sẽ gửi liên kết tạo mật khẩu mới đến email của bạn.</small>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-close-overlay="changePasswordOverlay">Hủy bỏ</button>
+        <button class="btn btn-danger" type="button" id="saveUserPasswordBtn">Gửi liên kết xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="editProfileOverlay">
+    <div class="modal modal-wide">
+      <div class="modal-head warning">
+        <h3><i class="ti ti-pencil"></i> Chỉnh sửa hồ sơ</h3>
+        <button class="modal-close" type="button" data-close-overlay="editProfileOverlay">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="profileNameInput">Tên hiển thị</label>
+          <input type="text" id="profileNameInput">
+        </div>
+        <div class="modal-field">
+          <label for="profileAvatarInput">Ảnh đại diện</label>
+          <input type="file" id="profileAvatarInput" accept=".jpg,.jpeg,.png">
+          <small>Hỗ trợ .jpg, .png. Tối đa 2MB. Bỏ trống nếu không muốn đổi ảnh.</small>
+        </div>
+        <div class="avatar-preview-box">
+          <div class="profile-avatar profile-avatar-preview" id="profileAvatarPreview">LM</div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost hidden" type="button" id="removeAvatarBtn">Xóa ảnh đại diện</button>
+        <button class="btn btn-ghost" type="button" data-close-overlay="editProfileOverlay">Hủy bỏ</button>
+        <button class="btn btn-dark" type="button" id="saveProfileBtn">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="assets/js/api_client.js"></script>
+  <script src="assets/js/pagehome_data.js"></script>
+  <script src="assets/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+* {
+    margin: 0;
+    padding:0;
+    box-sizing: border-box;
+
+}
+body { 
+    width:100%;
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    overflow: hidden; /* Ngăn hiện thanh cuộn ngoài ý muốn */
+    /* Đường dẫn đến hình ảnh
+    background-image: url(anh/background_colorful_ThienToi.png);
+    
+    /* Không lặp lại ảnh
+    background-repeat: no-repeat;
+    
+    /* Căn giữa ảnh
+    background-position: center;
+    
+    /* Phóng to ảnh bao phủ toàn màn hình
+    background-size: cover;
+    
+    /* Cố định ảnh khi cuộn trang (tùy chọn) 
+    background-attachment: fixed; */
+    
+/* cần làm thêm ảnh backup */
+
+}
+
+/* Video và Overlay phải bám theo trình duyệt (fixed) để không bị giới hạn bởi thẻ cha */
+.bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+}
+
+.login {
+/* Xóa bớt các thuộc tính không cần thiết vì body đã có flex căn giữa rồi */
+    position: relative;
+    z-index: 1;
+    width: 420px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px); /* Hiệu ứng kính mờ */
+    -webkit-backdrop-filter: blur(15px); /* Hỗ trợ Safari */
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    /* border-style: solid;
+    border-radius: 40px;
+    padding: 30px 40px;   
+    width: 500px;
+    height: 400px; 
+    background: transparent;
+    border: 2px solid rgba(255, 255 , 255, .2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 10px rgba(0,0,0, .2); */
+}
+
+@font-face {
+    font-family: 'Agbalumo';
+    /* Đường dẫn file font của bạn, lưu ý format ttf thì dùng format('truetype') */
+    src: url('font_chu/Agbalumo-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.o_dang_nhap h2{
+    text-align: center;
+    font-size: 2em;
+    font-weight: bold;
+    font-family: 'Agbalumo', cursive;
+    color: white;
+}
+
+.o_dang_nhap .box{
+    position: relative;
+    width:100%;
+    height: 50px;
+    margin: 30px 0;
+}
+
+.box input{
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    border: 2px solid rgba(255,255,255,.2);
+    border-radius: 40px;
+    font-size:16px;
+    color: white;
+    padding: 20px 45px 20px 20px;
+}
+
+.box input::placeholder{
+    color: white;
+}
+
+.box img {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+}
+
+
+.o_dang_nhap .remember_me{
+    display: flex;
+    justify-content: space-between;
+    font-size:14.5px;
+    margin: -15px 0 15px;
+    color: white;
+}
+
+.remember_me label input{
+    accent-color: rgba(82, 137, 255, 0.989);
+    margin-right: 3px;
+}
+
+.remember_me a {
+    color:white;
+    text-decoration: none;
+}
+
+.remember_me a:hover{
+    text-decoration: underline;
+}
+
+.o_dang_nhap .button_login {
+    width:100%;
+    height:50px;
+    background: white;
+    border:none;
+    outline:none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0,0,0,1);
+    cursor: pointer;
+    font-size: 16px;
+    color: #333333;
+    font-weight: 600;
+}
+
+.o_dang_nhap .regeister{
+    font-size: 14.5px;
+    text-align: center;
+    margin-top: 20px;
+    color: white;
+}
+
+.auth-message {
+    min-height: 22px;
+    margin: -8px 0 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #d4f8e8;
+}
+
+.auth-message.error {
+    color: #ffd4d4;
+}
+
+.regeister p a {
+    color:white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.regeister p a:hover{
+    text-decoration: underline;
+}
