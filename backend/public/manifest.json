@@ -1,0 +1,15 @@
+{
+  "name": "Laravel Note App",
+  "short_name": "NoteApp",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#202124",
+  "theme_color": "#fbbc04",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/752/752326.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
