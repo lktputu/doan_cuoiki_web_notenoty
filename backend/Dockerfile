@@ -10,7 +10,8 @@ RUN apt-get update \
         unzip \
         zip \
     && docker-php-ext-install gd pdo_mysql zip \
-    && a2enmod rewrite headers \
+    && a2dismod mpm_event \
+    && a2enmod mpm_prefork rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
@@ -24,5 +25,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache public/uploads/avatars public/uploads/notes \
     && ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage \
     && chown -R www-data:www-data storage bootstrap/cache public/uploads
+
+RUN a2dismod mpm_event && a2enmod mpm_prefork
 
 EXPOSE 80
