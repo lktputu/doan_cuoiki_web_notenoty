@@ -1,6 +1,7 @@
 (() => {
   const API_BASE_KEY = "notenoty_api_base";
   const SESSION_KEY = "notenoty_session_v1";
+  const CLIENT_ID_KEY = "notenoty_client_id_v1";
   const DEFAULT_API_BASE = "http://127.0.0.1:8000/api";
   const FALLBACK_API_BASES = [
     "http://127.0.0.1:8000/api",
@@ -40,9 +41,23 @@
     localStorage.removeItem(SESSION_KEY);
   }
 
+  function getClientId() {
+    let clientId = sessionStorage.getItem(CLIENT_ID_KEY);
+    if (!clientId) {
+      clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem(CLIENT_ID_KEY, clientId);
+    }
+    return clientId;
+  }
+
   function authHeaders() {
     const session = getSession();
-    return session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+    return session?.token
+      ? {
+          Authorization: `Bearer ${session.token}`,
+          "X-NoteNoty-Client-Id": getClientId()
+        }
+      : {};
   }
 
   async function fetchWithTimeout(url, options, timeoutMs = 3500) {
@@ -150,6 +165,7 @@
     getSession,
     setSession,
     clearSession,
+    getClientId,
     request,
     register: payload => request("/register", { method: "POST", body: JSON.stringify(payload), timeoutMs: 20000 }),
     login: payload => request("/login", { method: "POST", body: JSON.stringify(payload) }),
@@ -161,6 +177,7 @@
     changePassword: payload => request("/change-password", { method: "POST", body: JSON.stringify(payload), timeoutMs: 20000 }),
     completePasswordChange: payload => request("/change-password/complete", { method: "POST", body: JSON.stringify(payload) }),
     updatePreferences: preferences => request("/preferences", { method: "PUT", body: JSON.stringify({ preferences }) }),
+    getNote: id => request(`/notes/${id}`),
     createNote: payload => request("/notes", { method: "POST", body: JSON.stringify(payload), timeoutMs: payload?.images?.length ? 15000 : 3500 }),
     updateNote: (id, payload) => request(`/notes/${id}`, { method: "PUT", body: JSON.stringify(payload), timeoutMs: payload?.images?.length ? 15000 : 3500 }),
     deleteNote: id => request(`/notes/${id}`, { method: "DELETE" }),

@@ -36,6 +36,7 @@ class ApiController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
+            'activation_home_url' => 'nullable|string|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -55,18 +56,24 @@ class ApiController extends Controller
             'activation_token' => $autoActivate ? null : $token,
         ]);
 
+        $user->api_token = Str::random(60);
+        $user->save();
+
+        $activationHomeUrl = $this->validatedAppUrl($request->input('activation_home_url'));
+
         if (!$autoActivate) {
-            $this->sendActivationMail($user);
+            $this->sendActivationMail($user, $activationHomeUrl);
         }
 
         return response()->json([
             'success' => true,
+            'token' => $user->api_token,
             'user' => $this->serializeUser($user),
-            'activation_url' => $autoActivate ? null : $this->activationUrl($token),
+            'activation_url' => $autoActivate ? null : $this->activationUrl($token, $activationHomeUrl),
         ], 201);
     }
 
-    public function activate($token)
+    public function activate(Request $request, $token)
     {
         $user = User::where('activation_token', $token)->first();
 
@@ -78,9 +85,28 @@ class ApiController extends Controller
             ], 404);
         }
 
+        if ($user->is_active) {
+            return response()->view('emails.activation_result', [
+                'success' => true,
+                'title' => 'Tài khoản đã được kích hoạt',
+                'message' => 'Bạn đã kích hoạt tài khoản rồi. Hãy quay lại NoteNoty để tiếp tục sử dụng.',
+            ]);
+        }
+
         $user->is_active = 1;
-        $user->activation_token = null;
+        if (!$user->api_token) {
+            $user->api_token = Str::random(60);
+        }
         $user->save();
+
+        $homeUrl = $this->activationHomeUrl($request);
+        if ($homeUrl) {
+            return redirect()->away($this->appendQuery($homeUrl, [
+                'activated' => 1,
+                'api_token' => $user->api_token,
+                'email' => $user->email,
+            ]));
+        }
 
         return response()->view('emails.activation_result', [
             'success' => true,
@@ -172,7 +198,6 @@ class ApiController extends Controller
             'title' => 'Đặt lại mật khẩu',
             'subtitle' => 'Nhập mật khẩu mới cho tài khoản NoteNoty của bạn.',
             'buttonText' => 'Cập nhật mật khẩu',
-            'successMessage' => 'Mật khẩu đã được cập nhật. Bạn có thể quay lại trang đăng nhập NoteNoty.',
             'loginUrl' => $this->loginUrl($request),
         ]);
     }
@@ -337,7 +362,6 @@ class ApiController extends Controller
             'title' => 'Tạo mật khẩu mới',
             'subtitle' => 'Nhập mật khẩu mới cho tài khoản NoteNoty của bạn.',
             'buttonText' => 'Cập nhật mật khẩu',
-            'successMessage' => 'Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại bằng mật khẩu mới.',
             'loginUrl' => $this->loginUrl($request),
         ]);
     }
@@ -442,6 +466,66 @@ class ApiController extends Controller
         ]);
     }
 
+    public function authorizeRealtime(Request $request)
+    {
+        $user = $this->requireUser($request);
+        if (!$user) {
+            return $this->unauthorized();
+        }
+
+        $ids = collect($request->input('note_ids', []))
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => true,
+                'user_id' => $user->id,
+                'note_ids' => [],
+            ]);
+        }
+
+        $ownedIds = Note::where('user_id', $user->id)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->all();
+
+        $sharedIds = DB::table('shared_notes')
+            ->where('shared_with_user_id', $user->id)
+            ->whereIn('note_id', $ids)
+            ->pluck('note_id')
+            ->all();
+
+        return response()->json([
+            'success' => true,
+            'user_id' => $user->id,
+            'note_ids' => array_values(array_unique(array_merge($ownedIds, $sharedIds))),
+        ]);
+    }
+
+    public function showNote(Request $request, $id)
+    {
+        $user = $this->requireUser($request);
+        if (!$user) {
+            return $this->unauthorized();
+        }
+
+        $note = Note::with(['labels', 'attachments', 'sharedUsers', 'user'])->findOrFail($id);
+        if (!$this->canView($user, $note)) {
+            return $this->forbidden();
+        }
+
+        return response()->json([
+            'success' => true,
+            'note' => $this->serializeNote($note, $user),
+        ]);
+    }
+
     public function storeNote(Request $request)
     {
         $user = $this->requireUser($request);
@@ -476,7 +560,10 @@ class ApiController extends Controller
         $this->syncLabels($note, $user, $request->input('labels', []));
         $this->syncImages($note, $request->input('images', []));
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)], 201);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.created', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)], 201);
     }
 
     public function updateNote(Request $request, $id)
@@ -512,10 +599,14 @@ class ApiController extends Controller
 
         if ($this->isOwner($user, $note)) {
             $this->syncLabels($note, $user, $request->input('labels', []));
-            $this->syncImages($note, $request->input('images', []));
         }
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $this->syncImages($note, $request->input('images', []));
+
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.updated', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function destroyNote(Request $request, $id)
@@ -526,6 +617,7 @@ class ApiController extends Controller
         }
 
         $note = Note::where('user_id', $user->id)->findOrFail($id);
+        $this->broadcastNoteEvent($request, 'note.deleted', $note, ['noteId' => $note->id]);
         $note->labels()->detach();
         DB::table('shared_notes')->where('note_id', $note->id)->delete();
         $note->attachments()->delete();
@@ -546,7 +638,10 @@ class ApiController extends Controller
         $note->pinned_at = $note->is_pinned ? now() : null;
         $note->save();
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.pinned', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function unlockNote(Request $request, $id)
@@ -595,7 +690,10 @@ class ApiController extends Controller
         $note->password = Hash::make($request->new_password);
         $note->save();
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.password.updated', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function disableNotePassword(Request $request, $id)
@@ -614,7 +712,10 @@ class ApiController extends Controller
         $note->password = null;
         $note->save();
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.password.disabled', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function storeLabel(Request $request)
@@ -709,7 +810,10 @@ class ApiController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.share.updated', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function updateShare(Request $request, $id, $shareId)
@@ -731,7 +835,10 @@ class ApiController extends Controller
             ->where('note_id', $note->id)
             ->update(['permission' => $permission, 'updated_at' => now()]);
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.share.updated', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     public function revokeShare(Request $request, $id, $shareId)
@@ -752,7 +859,10 @@ class ApiController extends Controller
             ->where('note_id', $note->id)
             ->delete();
 
-        return response()->json(['success' => true, 'note' => $this->serializeNote($note->fresh(['labels', 'attachments', 'sharedUsers', 'user']), $user)]);
+        $fresh = $note->fresh(['labels', 'attachments', 'sharedUsers', 'user']);
+        $this->broadcastNoteEvent($request, 'note.share.updated', $fresh);
+
+        return response()->json(['success' => true, 'note' => $this->serializeNote($fresh, $user)]);
     }
 
     private function currentUser(Request $request)
@@ -944,6 +1054,58 @@ class ApiController extends Controller
         return (int) $note->user_id === (int) $user->id;
     }
 
+    private function requestClientId(Request $request)
+    {
+        return $request->headers->get('X-NoteNoty-Client-Id', '');
+    }
+
+    private function broadcastNoteEvent(Request $request, $event, Note $note, array $extra = [])
+    {
+        $note->load('sharedUsers');
+        $userIds = array_values(array_unique(array_merge(
+            [$note->user_id],
+            $note->sharedUsers->pluck('id')->all()
+        )));
+
+        $this->broadcastRealtime(array_merge([
+            'event' => $event,
+            'noteId' => $note->id,
+            'userIds' => $userIds,
+            'actorClientId' => $this->requestClientId($request),
+        ], $extra));
+    }
+
+    private function broadcastRealtime(array $payload)
+    {
+        $baseUrl = rtrim(env('NOTE_NOTY_REALTIME_HTTP_URL', 'http://127.0.0.1:8011'), '/');
+        $secret = env('NOTE_NOTY_REALTIME_SECRET', 'notenoty-local-realtime-secret');
+
+        if (!$baseUrl || !$secret) {
+            return;
+        }
+
+        $body = json_encode($payload);
+        if ($body === false) {
+            return;
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => implode("\r\n", [
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                    'X-NoteNoty-Realtime-Secret: ' . $secret,
+                ]),
+                'content' => $body,
+                'timeout' => 0.6,
+                'ignore_errors' => true,
+            ],
+        ]);
+
+        @file_get_contents($baseUrl . '/broadcast', false, $context);
+    }
+
     private function assetUrl($path)
     {
         if (!$path) {
@@ -961,16 +1123,17 @@ class ApiController extends Controller
         return asset(ltrim($path, '/'));
     }
 
-    private function activationUrl($token)
+    private function activationUrl($token, $homeUrl = null)
     {
-        return url('/api/activate/' . $token);
+        $url = url('/api/activate/' . $token);
+        return $homeUrl ? $this->appendQuery($url, ['home_url' => $homeUrl]) : $url;
     }
 
     private function passwordResetUrl(User $user, $token, Request $request = null)
     {
         $query = ['email' => $user->email];
         if ($request) {
-            $loginUrl = $this->validatedLoginUrl($request->input('login_url'));
+            $loginUrl = $this->validatedAppUrl($request->input('login_url'));
             if ($loginUrl) {
                 $query['login_url'] = $loginUrl;
             }
@@ -986,11 +1149,17 @@ class ApiController extends Controller
 
     private function loginUrl(Request $request)
     {
-        return $this->validatedLoginUrl($request->query('login_url'))
+        return $this->validatedAppUrl($request->query('login_url'))
             ?: env('NOTE_NOTY_LOGIN_URL', $request->getSchemeAndHttpHost() . '/login');
     }
 
-    private function validatedLoginUrl($url)
+    private function activationHomeUrl(Request $request)
+    {
+        return $this->validatedAppUrl($request->query('home_url'))
+            ?: env('NOTE_NOTY_HOME_URL');
+    }
+
+    private function validatedAppUrl($url)
     {
         if (!is_string($url) || $url === '') {
             return null;
@@ -999,7 +1168,13 @@ class ApiController extends Controller
         return preg_match('/^https?:\/\//i', $url) ? $url : null;
     }
 
-    private function sendActivationMail(User $user)
+    private function appendQuery($url, array $query)
+    {
+        $separator = strpos($url, '?') === false ? '?' : '&';
+        return $url . $separator . http_build_query($query);
+    }
+
+    private function sendActivationMail(User $user, $homeUrl = null)
     {
         Mail::send('emails.notenoty_action', [
             'brand' => 'NoteNoty',
@@ -1007,7 +1182,7 @@ class ApiController extends Controller
             'hello' => 'Xin chào ' . $user->name . ', chào mừng bạn đến với NoteNoty!',
             'body' => 'Vui lòng kích hoạt tài khoản để sử dụng đầy đủ các chức năng như chia sẻ ghi chú và đổi mật khẩu.',
             'buttonText' => 'Kích hoạt tài khoản',
-            'actionUrl' => $this->activationUrl($user->activation_token),
+            'actionUrl' => $this->activationUrl($user->activation_token, $homeUrl),
             'note' => 'Liên kết này dùng để xác nhận email đã đăng ký. Nếu bạn không tạo tài khoản NoteNoty, bạn có thể bỏ qua email này.',
         ], function ($message) use ($user) {
             $message->to($user->email, $user->name)

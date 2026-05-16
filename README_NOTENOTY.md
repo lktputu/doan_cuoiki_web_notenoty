@@ -13,7 +13,16 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 If port `8000` is busy, port `8010` is also supported by the frontend fallback.
 
-3. Open the frontend page:
+3. In another terminal, start the realtime WebSocket relay:
+
+```bash
+cd backend
+npm run realtime
+```
+
+By default it listens on `ws://127.0.0.1:8011` and receives Laravel broadcasts through `http://127.0.0.1:8011/broadcast`.
+
+4. Open the frontend page:
 
 ```text
 frontend/login_reggister_forgotpass/login.html

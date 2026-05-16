@@ -34,6 +34,14 @@
     return new URL(route, window.location.href).href;
   }
 
+  function browserRoute(route) {
+    if (!window.location.protocol.startsWith("http")) {
+      return undefined;
+    }
+
+    return absoluteRoute(route);
+  }
+
   function bindRegister() {
     const form = document.getElementById("registerForm");
     if (!form) return;
@@ -71,20 +79,19 @@
       try {
         submitButton.disabled = true;
         submitButton.textContent = "Đang đăng kí...";
-        await window.NoteNotyApi.register({
+        const data = await window.NoteNotyApi.register({
           name,
           email,
           password,
-          password_confirmation: passwordConfirmation
+          password_confirmation: passwordConfirmation,
+          activation_home_url: browserRoute(ROUTES.home)
         });
-        submitButton.textContent = "Đang đăng kí...";
-        const loginData = await window.NoteNotyApi.login({ email, password });
         window.NoteNotyApi.setSession({
           email,
-          token: loginData.token,
+          token: data.token,
           loggedInAt: Date.now()
         });
-        cacheUser(loginData.user);
+        cacheUser(data.user);
         localStorage.setItem("notenoty_last_email", email);
         window.location.href = ROUTES.home;
       } catch (error) {
@@ -165,7 +172,7 @@
         submitButton.textContent = "Đang gửi email...";
         const data = await window.NoteNotyApi.forgotPassword({
           email,
-          login_url: absoluteRoute(ROUTES.login)
+          login_url: browserRoute(ROUTES.login)
         });
         showMessage("forgotMessage", data.message || "Liên kết khôi phục đã được gửi về email.");
       } catch (error) {

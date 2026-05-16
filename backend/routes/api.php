@@ -28,6 +28,7 @@ Route::get('/password-reset/{token}', [ApiController::class, 'resetPasswordPage'
 Route::post('/reset-password', [ApiController::class, 'resetPassword']);
 Route::get('/change-password/confirm/{token}', [ApiController::class, 'confirmPasswordChange']);
 Route::post('/change-password/complete', [ApiController::class, 'completePasswordChange']);
+Route::post('/realtime/authorize', [ApiController::class, 'authorizeRealtime']);
 
 Route::post('/logout', [ApiController::class, 'logout']);
 Route::get('/me', [ApiController::class, 'me']);
@@ -36,6 +37,7 @@ Route::post('/change-password', [ApiController::class, 'changePassword']);
 Route::put('/preferences', [ApiController::class, 'updatePreferences']);
 Route::get('/bootstrap', [ApiController::class, 'bootstrap']);
 
+Route::get('/notes/{id}', [ApiController::class, 'showNote']);
 Route::post('/notes', [ApiController::class, 'storeNote']);
 Route::put('/notes/{id}', [ApiController::class, 'updateNote']);
 Route::delete('/notes/{id}', [ApiController::class, 'destroyNote']);

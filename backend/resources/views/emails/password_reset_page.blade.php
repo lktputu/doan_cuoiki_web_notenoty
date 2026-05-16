@@ -129,7 +129,6 @@
         const token = @json($token);
         const email = @json($email ?? '');
         const mode = @json($mode ?? 'reset');
-        const successMessage = @json($successMessage ?? 'Mật khẩu đã được cập nhật.');
         const loginUrl = @json($loginUrl ?? url('/login'));
         const form = document.getElementById('resetForm');
         const message = document.getElementById('message');
@@ -180,12 +179,8 @@
                     throw new Error(data.message || 'Không thể cập nhật mật khẩu.');
                 }
 
-                setMessage(data.message || successMessage, 'success');
-                form.reset();
                 window.localStorage?.removeItem('notenoty_session_v1');
-                window.setTimeout(() => {
-                    window.location.href = loginUrl;
-                }, 1300);
+                window.location.replace(loginUrl);
             } catch (error) {
                 setMessage(error.message, 'error');
             } finally {

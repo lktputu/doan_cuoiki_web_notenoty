@@ -22,6 +22,7 @@
     localStorage.setItem(STORAGE_KEYS.labels, JSON.stringify(window.appState.labels));
     localStorage.setItem(STORAGE_KEYS.prefs, JSON.stringify(window.appState.prefs));
     localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(window.appState.user));
+    window.dispatchEvent(new CustomEvent("notenoty:state-changed"));
   }
 
   function saveLabelsState() {
@@ -181,6 +182,34 @@
       window.location.href = ROUTES.login;
       return false;
     }
+    return true;
+  }
+
+  function consumeActivationSession() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("api_token");
+
+    if (!token) return false;
+
+    const email = params.get("email") || "";
+    Api.setSession({
+      email,
+      token,
+      loggedInAt: Date.now()
+    });
+
+    if (email) {
+      localStorage.setItem("notenoty_last_email", email);
+    }
+
+    sessionStorage.setItem("notenoty_activation_success", "1");
+    params.delete("activated");
+    params.delete("api_token");
+    params.delete("email");
+
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, document.title, nextUrl);
     return true;
   }
 
@@ -364,6 +393,12 @@
   }
 
   async function syncFromBackend() {
+    if (window.appState.syncingBackend) {
+      return;
+    }
+
+    window.appState.syncingBackend = true;
+
     try {
       if (loadOfflineQueue().length) {
         const synced = await syncOfflineQueue({ silent: true });
@@ -386,7 +421,23 @@
       window.appState.offline = true;
       Render.renderAll();
       showToast("Đang dùng dữ liệu offline đã lưu trên trình duyệt.", "error");
+    } finally {
+      window.appState.syncingBackend = false;
     }
+  }
+
+  function refreshFromBackendWhenVisible() {
+    if (document.visibilityState === "hidden" || !Api.getSession()?.token) {
+      return;
+    }
+
+    const now = Date.now();
+    if (window.appState.lastForegroundSyncAt && now - window.appState.lastForegroundSyncAt < 1500) {
+      return;
+    }
+
+    window.appState.lastForegroundSyncAt = now;
+    syncFromBackend();
   }
 
   function getNextLabelId() {
@@ -412,7 +463,64 @@
       return;
     }
 
+    if (note.received) {
+      window.appState.receivedNotes.unshift(note);
+      return;
+    }
+
     window.appState.notes.unshift(note);
+  }
+
+  function removeLocalNote(noteId) {
+    const beforeOwn = window.appState.notes.length;
+    const beforeReceived = window.appState.receivedNotes.length;
+    window.appState.notes = window.appState.notes.filter(note => !sameId(note.id, noteId));
+    window.appState.receivedNotes = window.appState.receivedNotes.filter(note => !sameId(note.id, noteId));
+    return beforeOwn !== window.appState.notes.length || beforeReceived !== window.appState.receivedNotes.length;
+  }
+
+  function realtimeSubscriptionNoteIds() {
+    return [...window.appState.notes, ...(window.appState.receivedNotes || [])]
+      .map(note => note.id)
+      .filter(id => id !== null && id !== undefined && !isTempId(id));
+  }
+
+  async function handleRealtimeNoteEvent(message) {
+    if (!message?.noteId || message.actorClientId === Api.getClientId()) {
+      return;
+    }
+
+    const noteId = message.noteId;
+
+    if (message.event === "note.deleted") {
+      if (removeLocalNote(noteId)) {
+        saveState();
+        Render.renderAll();
+        showToast("Một ghi chú được chia sẻ vừa bị xóa.");
+      }
+      return;
+    }
+
+    try {
+      const data = await Api.getNote(noteId);
+      if (data.note) {
+        replaceNote(data.note);
+        saveState();
+        Render.renderAll();
+        showToast("Ghi chú được chia sẻ vừa cập nhật realtime.");
+      }
+    } catch (error) {
+      if (error?.status === 403 || error?.status === 404) {
+        if (removeLocalNote(noteId)) {
+          saveState();
+          Render.renderAll();
+          showToast("Quyền truy cập một ghi chú được chia sẻ vừa thay đổi.", "error");
+        }
+        return;
+      }
+
+      handleApiError(error);
+    }
   }
 
   function applyEditorToLocalNote(payload) {
@@ -1498,13 +1606,39 @@
     });
   }
 
+  function bindForegroundSyncEvents() {
+    window.addEventListener("focus", refreshFromBackendWhenVisible);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshFromBackendWhenVisible();
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key !== STORAGE_KEYS.session) {
+        return;
+      }
+
+      initializeCachedState();
+      Render.renderAll();
+      refreshFromBackendWhenVisible();
+    });
+  }
+
   function initPage() {
+    const activatedFromEmail = consumeActivationSession();
     if (!requireAuthSession()) return;
     initializeCachedState();
     bindEvents();
+    bindForegroundSyncEvents();
     Render.renderAll();
+    if (sessionStorage.getItem("notenoty_activation_success") === "1") {
+      sessionStorage.removeItem("notenoty_activation_success");
+      showToast("Tài khoản đã được kích hoạt. Chào mừng em quay lại NoteNoty.");
+    }
     updateAutosaveStatus(window.appState.prefs.autoSaveEnabled ? "Chờ nhập nội dung để tự lưu" : "Tự động lưu đang tắt");
     syncFromBackend();
+    if (activatedFromEmail) {
+      window.setTimeout(refreshFromBackendWhenVisible, 500);
+    }
   }
 
   window.selectEditorColor = selectEditorColor;
@@ -1521,6 +1655,10 @@
   window.updateSharePermission = updateSharePermission;
   window.saveLabelName = saveLabelName;
   window.deleteLabel = deleteLabel;
+  window.NoteWiseActions = {
+    getRealtimeNoteIds: realtimeSubscriptionNoteIds,
+    handleRealtimeNoteEvent
+  };
 
   initPage();
 })();
