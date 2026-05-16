@@ -1,0 +1,24 @@
+{
+  "name": "NoteNoty",
+  "short_name": "NoteNoty",
+  "description": "A note management app with sharing, offline cache, and realtime updates.",
+  "start_url": "./pagehome.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f3ff",
+  "theme_color": "#7d72cc",
+  "icons": [
+    {
+      "src": "assets/css/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/css/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
