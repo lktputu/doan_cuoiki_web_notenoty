@@ -11,16 +11,27 @@
   ];
 
   function getApiBase() {
+    const configuredBase = window.NoteNotyConfig?.apiBase;
+    if (configuredBase && configuredBase !== "auto") {
+      return configuredBase.replace(/\/$/, "");
+    }
+
     return (localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE).replace(/\/$/, "");
   }
 
   function getApiBases() {
-    const bases = [getApiBase()];
+    const configuredBase = window.NoteNotyConfig?.apiBase;
+    const bases = [];
+
+    if (configuredBase && configuredBase !== "auto") {
+      bases.push(configuredBase);
+    }
 
     if (window.location.protocol.startsWith("http")) {
       bases.push(`${window.location.origin}/api`);
     }
 
+    bases.push(getApiBase());
     bases.push(...FALLBACK_API_BASES);
     return [...new Set(bases.map(base => base.replace(/\/$/, "")))];
   }

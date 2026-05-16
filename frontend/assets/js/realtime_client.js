@@ -16,8 +16,17 @@
   let lastSubscriptionKey = "";
 
   function getConfiguredBases() {
+    const configuredBase = window.NoteNotyConfig?.realtimeWsBase;
     const stored = localStorage.getItem(WS_BASE_KEY);
-    const bases = stored ? [stored] : [];
+    const bases = [];
+
+    if (configuredBase && configuredBase !== "auto") {
+      bases.push(configuredBase);
+    }
+
+    if (stored) {
+      bases.push(stored);
+    }
 
     if (window.location.protocol.startsWith("http")) {
       const scheme = window.location.protocol === "https:" ? "wss" : "ws";
