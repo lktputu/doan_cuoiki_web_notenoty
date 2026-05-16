@@ -1,10 +1,5 @@
-# Sử dụng đúng PHP 7.2 mượt mà nhất cho đồ án của em
-FROM php:7.2-apache
-
-# Cập nhật đường dẫn tải phần mềm sang kho lưu trữ cũ (Sửa lỗi 404 Debian Buster)
-RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list \
-    && echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list \
-    && echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99no-check-valid-until
+# Sử dụng PHP 8.2 – phiên bản yêu cầu bởi Laravel 12
+FROM php:8.2-apache
 
 # Cài đặt các phần mềm phụ trợ
 RUN apt-get update && apt-get install -y libpng-dev libzip-dev zip unzip git
