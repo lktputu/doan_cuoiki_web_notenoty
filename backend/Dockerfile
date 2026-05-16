@@ -26,6 +26,5 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage \
     && chown -R www-data:www-data storage bootstrap/cache public/uploads
 
-RUN a2dismod mpm_event && a2enmod mpm_prefork
 
 EXPOSE 80
